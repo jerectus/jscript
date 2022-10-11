@@ -6,16 +6,27 @@ using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 public class Program {
-	static string SystemIncludePath_ = null;
+	static HashSet<string> IncludedPaths = new HashSet<string>();
+	
+	static string systemIncludePath_ = null;
 	
 	static string GetSystemIncludePath() {
-		if (SystemIncludePath_ == null) {
-			SystemIncludePath_ = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "include");
+		if (systemIncludePath_ == null) {
+			systemIncludePath_ = Environment.GetEnvironmentVariable("JSCRIPT_INCLUDE");
+			if (systemIncludePath_ != null) {
+				systemIncludePath_ = Path.GetFullPath(systemIncludePath_);
+			} else {
+				systemIncludePath_ = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "jscript/include");
+			}
 		}
-		return SystemIncludePath_;
+		return systemIncludePath_;
 	}
 	
-	static HashSet<string> IncludedPaths = new HashSet<string>();
+	static string GetIncludePath(string path, string currentPath) {
+		path = path.Replace("/", "\\");
+		string basePath = path.StartsWith(".") ? Path.GetDirectoryName(currentPath) : GetSystemIncludePath();
+		return Path.GetFullPath(Path.Combine(basePath, path));
+	}
 	
 	static void Include(string path, StreamWriter writer) {
 		IncludedPaths.Add(path);
@@ -29,13 +40,15 @@ public class Program {
 				Match m = Regex.Match(line, @"^//#import\s*(\w+)\s*from\s*""([^""]+)""");
 				if (m.Success) {
 					var name = m.Groups[1].Value;
-					var incPath = Path.Combine(Path.GetDirectoryName(path), m.Groups[2].Value.Replace('/', '\\'));
+					var incPath = GetIncludePath(m.Groups[2].Value, path);
+					var incPathKey = incPath.Replace("\\", "/").ToUpper();
 					if (!IncludedPaths.Contains(incPath)) {
-						writer.WriteLine(";(function() {var module = {exports:{}};");
+						var dir = Path.GetDirectoryName(incPath).Replace("\\", "\\\\");
+						writer.WriteLine(";(function() {const module = {exports:{}}, __dir = '" + dir + "';");
 						Include(Path.Combine(Path.GetDirectoryName(path), incPath), writer);
-						writer.WriteLine(";__modules['" + incPath + "'] = module.exports;})();");
+						writer.WriteLine(";__modules['" + incPathKey + "'] = module.exports;})();");
 					}
-					writer.WriteLine("var " + name + " = __modules['" + incPath + "'];");
+					writer.WriteLine("const " + name + " = __modules['" + incPathKey + "'];");
 					writer.WriteLine("//##jscript##;" + path + ";" + LineNumber);
 				}
 			}
@@ -46,7 +59,7 @@ public class Program {
 		var srcPath = Path.GetFullPath(args[0]);
 		var exePath = srcPath + ".exe.js";
 		using (var writer = new StreamWriter(exePath)) {
-			writer.WriteLine("var __modules = {};");
+			writer.WriteLine("const __modules = {};");
 			Include(srcPath, writer);
 		}
 		args[0] = exePath;

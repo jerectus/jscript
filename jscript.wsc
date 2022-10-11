@@ -2,27 +2,26 @@
 <package>
 	<?component error="true" debug="true"?>
 	<comment>JScript Support</comment>
-	<component id="JScript.Support">
-	    <registration progid="JScript.Support" description="JScript.Support" version="1" />
+	<component id="JScript.JScript">
+	    <registration progid="JScript.JScript" description="JScript.JScript" version="1" />
 		<public>
-			<property name="messageBox"/>
-			<property name="CreateObject"/>
-			<property name="GetWSC"/>
+			<property name="setup"/>
+			<property name="getComponent"/>
+			<property name="quit"/>
 		</public>
-		<script language="VBScript"><![CDATA[
-			Function vbMsgBox(message)
-				MsgBox message
-			End Function
-		]]></script>
 		<script language="JScript"><![CDATA[
-			function messageBox(message) {
-				vbMsgBox(message);
+			var WScript = null;
+			function setup(objWScript) {
+				WScript = objWScript;
 			}
-			function CreateObject(name) {
-				return new ActiveXObject(name);
-			}
-			function GetWSC(name) {
+			function getComponent(name) {
 				return GetObject(name);
+			}
+			function quit(exitCode) {
+				try {
+					WScript.quit(exitCode);
+				} catch (e) {
+				}
 			}
 		]]></script>
 	</component>
