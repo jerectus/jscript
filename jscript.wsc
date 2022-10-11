@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="Shift_JIS" standalone="yes" ?>
+<package>
+	<?component error="true" debug="true"?>
+	<comment>JScript Support</comment>
+	<component id="JScript.Support">
+	    <registration progid="JScript.Support" description="JScript.Support" version="1" />
+		<public>
+			<property name="messageBox"/>
+			<property name="CreateObject"/>
+			<property name="GetWSC"/>
+		</public>
+		<script language="VBScript"><![CDATA[
+			Function vbMsgBox(message)
+				MsgBox message
+			End Function
+		]]></script>
+		<script language="JScript"><![CDATA[
+			function messageBox(message) {
+				vbMsgBox(message);
+			}
+			function CreateObject(name) {
+				return new ActiveXObject(name);
+			}
+			function GetWSC(name) {
+				return GetObject(name);
+			}
+		]]></script>
+	</component>
+</package>
